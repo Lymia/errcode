@@ -1,0 +1,23 @@
+[package]
+name = "enumset"
+version = "0.1.0"
+authors = ["Alissa Rao <aura@aura.moe>"]
+edition = "2024"
+
+description = "A Rust library for simplified error handling."
+keywords = ["error", "error-handling"]
+categories = ["rust-patterns", "no-std"]
+
+documentation = "https://docs.rs/errcode/"
+repository = "https://github.com/Lymia/errcode"
+readme = "README.md"
+
+license = "MIT/Apache-2.0"
+
+[badges]
+travis-ci = { repository = "Lymia/errcode", branch = "master" }
+maintenance = { status = "actively-developed" }
+
+[features]
+
+[dependencies]
