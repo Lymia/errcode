@@ -1,7 +1,7 @@
 #![no_std]
 extern crate alloc;
 
-mod errorcode;
-mod r#impl;
+mod error_code;
+mod error_impl;
 
-pub use errorcode::ErrorCode;
+pub use error_code::ErrorCode;
