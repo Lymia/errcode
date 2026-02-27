@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "errcode"
+name = "enumset"
 version = "0.1.0"

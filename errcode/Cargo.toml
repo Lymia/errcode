@@ -19,5 +19,16 @@ travis-ci = { repository = "Lymia/errcode", branch = "master" }
 maintenance = { status = "actively-developed" }
 
 [features]
+# The `alloc` crate is available.
+#
+# This enables storing the error in a one-pointer format, instead of a two-pointer format, as well
+# as storing a full error context.
+alloc = []
+
+# Store an `Location` in the error type for the original location, even when `alloc` is not
+# available.
+#
+# This increases the size of the error type from two to three pointers.
+location_no_alloc = []
 
 [dependencies]
