@@ -12,42 +12,43 @@ mod implementation {
 
     #[repr(transparent)]
     pub struct ErrorImpl {
-        inner: Box<ErrorSource>,
+        inner: Box<ErrorImplInner>,
     }
-    impl ErrorImpl {
-        pub fn wrap(source: ErrorSource) -> Self {
-            ErrorImpl { inner: Box::new(source) }
-        }
-    }
-
-    pub struct ErrorSource {
+    struct ErrorImplInner {
         original: ErrorSourceStep,
         steps: Vec<ErrorSourceStep>,
     }
-    impl ErrorSource {
+    impl ErrorImpl {
         #[track_caller]
-        pub fn new(source: &'static ErrorSourceStatic, args: &Arguments<'_>) -> ErrorSource {
-            ErrorSource {
-                original: ErrorSourceStep {
-                    static_info: source,
-                    formatted_message: Some(args.to_string().into()),
-                    location: Location::caller(),
-                },
-                steps: Vec::new(),
+        pub fn new(source: ErrorOrigin, args: Option<&Arguments<'_>>) -> ErrorImpl {
+            ErrorImpl {
+                inner: Box::new(ErrorImplInner {
+                    original: ErrorSourceStep {
+                        static_info: source,
+                        formatted_message: args.map(|x| x.to_string().into()),
+                        location: Location::caller(),
+                    },
+                    steps: Vec::new(),
+                }),
             }
         }
 
-        pub fn push_step(&mut self, step: ErrorSourceStep, args: &Arguments<'_>) {
+        #[track_caller]
+        pub fn push_context(
+            &mut self,
+            source: &'static ErrorSourceStatic,
+            args: Option<&Arguments<'_>>,
+        ) {
             let step = ErrorSourceStep {
-                static_info: &ErrorSourceStatic {},
-                formatted_message: None,
-                location: &(),
+                static_info: ErrorOrigin::StaticOrigin(source),
+                formatted_message: args.map(|x| x.to_string().into()),
+                location: Location::caller(),
             };
         }
     }
 
     pub struct ErrorSourceStep {
-        static_info: &'static ErrorSourceStatic,
+        static_info: ErrorOrigin,
         formatted_message: Option<Cow<'static, str>>,
         location: &'static Location<'static>,
     }
@@ -55,26 +56,30 @@ mod implementation {
 
 #[cfg(not(feature = "alloc"))]
 mod implementation {
-    use core::hint::unreachable_unchecked;
     use super::*;
+    use core::hint::unreachable_unchecked;
     use core::num::NonZeroUsize;
 
-    pub struct ErrorSource {
+    pub struct ErrorImpl {
         origin_info: PackedOriginInfo,
         #[cfg(feature = "location_no_alloc")]
         original_location: &'static Location<'static>,
     }
-    impl ErrorSource {
-        #[track_caller]
-        pub fn new(source: ErrorOrigin, _args: &Arguments<'_>) -> ErrorSource {
-            ErrorSource {
+    impl ErrorImpl {
+        #[cfg_attr(feature = "location_no_alloc", track_caller)]
+        pub fn new(source: ErrorOrigin, _args: Option<&Arguments<'_>>) -> ErrorImpl {
+            ErrorImpl {
                 origin_info: PackedOriginInfo::for_origin(source),
                 #[cfg(feature = "location_no_alloc")]
                 original_location: Location::caller(),
             }
         }
 
-        pub fn push_context(&mut self, source: &'static ErrorSourceStatic, _args: &Arguments<'_>) {
+        pub fn push_context(
+            &mut self,
+            source: &'static ErrorSourceStatic,
+            _args: Option<&Arguments<'_>>,
+        ) {
             self.origin_info = self.origin_info.with_context(source);
         }
     }
@@ -116,18 +121,20 @@ mod implementation {
         fn with_context(mut self, source: &'static ErrorSourceStatic) -> Self {
             unsafe {
                 match self.tag() {
-                    TAG_STATIC_ORIGINAL | TAG_STATIC_CONTEXT_ONLY => if self.additional == 0 {
-                        self.additional = source as *const _ as usize;
-                        self
-                    } else {
-                        let original = &*(self.additional as *const ErrorSourceStatic);
-                        if original.error_code.is_none() || source.error_code.is_some() {
+                    TAG_STATIC_ORIGINAL | TAG_STATIC_CONTEXT_ONLY => {
+                        if self.additional == 0 {
                             self.additional = source as *const _ as usize;
                             self
                         } else {
-                            self
+                            let original = &*(self.additional as *const ErrorSourceStatic);
+                            if original.error_code.is_none() || source.error_code.is_some() {
+                                self.additional = source as *const _ as usize;
+                                self
+                            } else {
+                                self
+                            }
                         }
-                    },
+                    }
                     TAG_STATIC_TYPE_ONLY => PackedOriginInfo {
                         tag: NonZeroUsize::new_unchecked(
                             (source as *const _ as usize) | TAG_STATIC_CONTEXT_ONLY,
