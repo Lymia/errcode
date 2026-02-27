@@ -2,6 +2,6 @@
 extern crate alloc;
 
 mod errorcode;
-mod repr;
+mod r#impl;
 
 pub use errorcode::ErrorCode;

@@ -1,6 +1,6 @@
 //! Contains the raw implementation of the error code API.
 
-use crate::repr::ErrorSourceStatic;
+use crate::r#impl::ErrorSourceStatic;
 use core::any::TypeId;
 
 /// Represents the info underlying an error code.

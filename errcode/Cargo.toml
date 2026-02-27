@@ -19,16 +19,24 @@ travis-ci = { repository = "Lymia/errcode", branch = "master" }
 maintenance = { status = "actively-developed" }
 
 [features]
-# The `alloc` crate is available.
-#
-# This enables storing the error in a one-pointer format, instead of a two-pointer format, as well
-# as storing a full error context.
-alloc = []
 
-# Store an `Location` in the error type for the original location, even when `alloc` is not
-# available.
+######################
+# Repr feature flags #
+######################
+
+# A boxed format that uses one pointer, and stores all relevant information about errors.
+repr_full = []
+
+# An unboxed format that takes two pointers.
 #
-# This increases the size of the error type from two to three pointers.
-location_no_alloc = []
+# Stores minimum information about the error, in exchange for not needing `alloc` and remaining
+# fairly compact.
+#
+# This is the default option.
+repr_unboxed = []
+
+# Similar to `repr_unboxed`, but storing reliable location information in exchange for using an
+# additional pointer worth of space.
+repr_unboxed_location = []
 
 [dependencies]
