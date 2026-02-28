@@ -7,7 +7,8 @@ use core::panic::Location;
 /// Common trait for [`ErrorImpl`] variants.
 pub trait ErrorImplFunctions {
     /// The iterator type used to iterate frames.
-    type FrameIter: Iterator<Item = ErrorFrame>;
+    type FrameIter<'a>: Iterator<Item = ErrorFrame> + 'a
+    where Self: 'a;
 
     /// Creates a new error type.
     fn new(source: ErrorOrigin, args: Option<&Arguments<'_>>) -> ErrorImpl;
@@ -19,7 +20,7 @@ pub trait ErrorImplFunctions {
     fn code(&self) -> Option<&'static ErrorCodeInfo>;
 
     /// Returns an iterator of the frames in this error type.
-    fn iter(&self) -> Self::FrameIter;
+    fn iter<'a>(&'a self) -> Self::FrameIter<'a>;
 }
 
 pub struct ErrorSourceStatic {
@@ -203,7 +204,7 @@ impl InternalContextType {
 }
 
 const _COMMON_CHECKS: () = {
-    const fn test<T: ErrorImplFunctions>() {}
+    const fn test<T: ErrorImplFunctions + Sync + Send>() {}
     test::<ErrorImpl>();
 };
 
@@ -213,7 +214,7 @@ const _COMMON_CHECKS: () = {
 mod full;
 
 #[cfg(feature = "repr_full")]
-use full::ErrorImpl;
+pub use full::ErrorImpl;
 
 // repr unboxed
 ////////////////
@@ -229,7 +230,7 @@ mod unboxed;
     feature = "repr_unboxed_location",
     not(any(feature = "repr_full"))
 ))]
-use unboxed::ErrorImpl;
+pub use unboxed::ErrorImpl;
 
 // fallback
 ////////////

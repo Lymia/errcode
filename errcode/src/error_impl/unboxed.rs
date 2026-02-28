@@ -1,18 +1,19 @@
 //! Implementation for `repr_unboxed` and `repr_unboxed_location`.
-//! 
+//!
 //! TODO: Implement
 
 use super::*;
 use core::hint::unreachable_unchecked;
 use core::num::NonZeroUsize;
 
+#[derive(Clone)]
 pub struct ErrorImpl {
     origin_info: PackedOriginInfo,
     #[cfg(feature = "repr_unboxed_location")]
     original_location: &'static Location<'static>,
 }
 impl ErrorImplFunctions for ErrorImpl {
-    type FrameIter = ErrorImplIter;
+    type FrameIter<'a> = ErrorImplIter;
 
     #[cfg_attr(feature = "repr_unboxed_location", track_caller)]
     fn new(source: ErrorOrigin, _args: Option<&Arguments<'_>>) -> ErrorImpl {
@@ -23,11 +24,7 @@ impl ErrorImplFunctions for ErrorImpl {
         }
     }
 
-    fn push_context(
-        &mut self,
-        source: &'static ErrorSourceStatic,
-        _args: Option<&Arguments<'_>>,
-    ) {
+    fn push_context(&mut self, source: &'static ErrorSourceStatic, _args: Option<&Arguments<'_>>) {
         self.origin_info = self.origin_info.with_context(source);
     }
 
@@ -35,7 +32,7 @@ impl ErrorImplFunctions for ErrorImpl {
         self.origin_info.code()
     }
 
-    fn iter(&self) -> Self::FrameIter {
+    fn iter(&self) -> Self::FrameIter<'_> {
         ErrorImplIter {
             phase: ErrorIterPhase::TypeContext,
             origin_info: self.origin_info,
@@ -93,9 +90,7 @@ impl PackedOriginInfo {
                 ErrorOrigin::TypeOrigin(ptr, None) => {
                     assert!(ptr.len() < MAX_TYPE_LEN);
                     PackedOriginInfo {
-                        tag: NonZeroUsize::new_unchecked(
-                            (ptr.len() << 2) | TAG_STATIC_TYPE_ONLY,
-                        ),
+                        tag: NonZeroUsize::new_unchecked((ptr.len() << 2) | TAG_STATIC_TYPE_ONLY),
                         additional: ptr.as_ptr() as usize,
                     }
                 }
@@ -221,9 +216,7 @@ impl Iterator for ErrorImplIter {
             } else if tag == TAG_STATIC_CONTEXT_ONLY {
                 // we have a former type node that we appended context to
                 return Some(ErrorFrame {
-                    data: ErrorFrameData::InternalContext(
-                        InternalContextType::OriginalTypeLost,
-                    ),
+                    data: ErrorFrameData::InternalContext(InternalContextType::OriginalTypeLost),
                     location: self.original_location.map(DecodedLocation::from),
                 });
             }
@@ -295,6 +288,7 @@ impl Iterator for ErrorImplIter {
             }
         }
 
+        // we return none at this point!
         None
     }
 }
