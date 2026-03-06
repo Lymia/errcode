@@ -5,7 +5,7 @@ use core::fmt::{Arguments, Display, Formatter};
 use core::panic::Location;
 
 /// Common trait for [`ErrorImpl`] variants.
-pub trait ErrorImplFunctions {
+pub trait ErrorImplFunctions: Clone {
     /// The iterator type used to iterate frames.
     type FrameIter<'a>: Iterator<Item = ErrorFrame> + 'a
     where Self: 'a;
@@ -23,6 +23,8 @@ pub trait ErrorImplFunctions {
     fn iter<'a>(&'a self) -> Self::FrameIter<'a>;
 }
 
+#[derive(Copy, Clone)]
+#[repr(align(4))]
 pub struct ErrorSourceStatic {
     pub error_code: Option<&'static ErrorCodeInfo>,
     pub message_static: Option<&'static str>,
@@ -104,6 +106,10 @@ impl Display for ErrorFrame {
                 None if msg.is_some() => write!(f, "{}", msg.as_ref().unwrap())?,
                 None => write!(f, "<no message or code given???>")?,
             },
+        }
+
+        if let Some(location) = &self.location {
+            write!(f, " at {}:{}:{}", location.module, location.line, location.column)?;
         }
 
         Ok(())

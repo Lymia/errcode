@@ -1,6 +1,6 @@
 //! Implementation for `repr_unboxed` and `repr_unboxed_location`.
 //!
-//! TODO: Implement
+//! TODO: Document
 
 use super::*;
 use core::hint::unreachable_unchecked;
@@ -168,6 +168,7 @@ impl PackedOriginInfo {
         }
     }
 
+    #[inline(never)]
     fn code(&self) -> Option<&'static ErrorCodeInfo> {
         if self.tag() == TAG_STATIC_TYPE_ONLY {
             None
@@ -295,6 +296,5 @@ impl Iterator for ErrorImplIter {
 
 const _CHECK_REQUIRED_ALIGNMENT: () = {
     let required_alignment = 4;
-    assert!(align_of::<&'static ErrorSourceStatic>() >= required_alignment);
-    assert!(align_of::<&'static str>() >= required_alignment);
+    assert!(align_of::<ErrorSourceStatic>() >= required_alignment);
 };

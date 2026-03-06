@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 pub struct ErrorImpl {
     inner: Box<ErrorImplInner>,
 }
+#[derive(Clone)]
 struct ErrorImplInner {
     steps: Vec<ErrorSourceStep>,
     current_code: Option<&'static ErrorCodeInfo>,
@@ -50,6 +51,7 @@ impl ErrorImplFunctions for ErrorImpl {
         self.inner.current_code = source.error_code;
     }
 
+    #[inline(always)]
     fn code(&self) -> Option<&'static ErrorCodeInfo> {
         self.inner.current_code
     }
@@ -63,6 +65,7 @@ impl ErrorImplFunctions for ErrorImpl {
     }
 }
 
+#[derive(Clone)]
 struct ErrorSourceStep {
     static_info: ErrorOrigin,
     location: &'static Location<'static>,
@@ -89,13 +92,52 @@ impl Iterator for ErrorImplIter<'_> {
             if self.phase == FrameLoopPhase::LocationMismatchFrame {
                 self.phase = FrameLoopPhase::Context;
 
-                // TODO: Location mismatch
+                let location = DecodedLocation::from(frame.location);
+                let origin = match &frame.static_info {
+                    ErrorOrigin::StaticOrigin(origin) => origin.location,
+                    ErrorOrigin::TypeOrigin(_, origin) => origin.and_then(|x| x.location),
+                };
+                if let Some(origin) = origin {
+                    if !origin.is_same(location) {
+                        return Some(ErrorFrame {
+                            data: ErrorFrameData::InternalContext(
+                                InternalContextType::ErrorTypeConstructed,
+                            ),
+                            location: Some(*origin),
+                        });
+                    }
+                }
             }
 
             if self.phase == FrameLoopPhase::Context {
                 self.phase = FrameLoopPhase::Ended;
 
-                // TODO: Context
+                let code = match frame.static_info {
+                    ErrorOrigin::StaticOrigin(origin) => origin.error_code,
+                    ErrorOrigin::TypeOrigin(_, origin) => origin.and_then(|x| x.error_code),
+                };
+                return Some(ErrorFrame {
+                    data: match &frame.formatted_message {
+                        None => match frame.static_info {
+                            ErrorOrigin::StaticOrigin(origin) => match origin.message_static {
+                                None => ErrorFrameData::NormalFrame(None, code),
+                                Some(msg) => ErrorFrameData::NormalFrame(
+                                    Some(MessageContainer::Static(msg)),
+                                    code,
+                                ),
+                            },
+                            ErrorOrigin::TypeOrigin(ty, _) => ErrorFrameData::TypeFrame(ty, code),
+                        },
+                        Some(Cow::Borrowed(str)) => {
+                            ErrorFrameData::NormalFrame(Some(MessageContainer::Static(str)), code)
+                        }
+                        Some(Cow::Owned(str)) => ErrorFrameData::NormalFrame(
+                            Some(MessageContainer::Formatted(str.clone())),
+                            code,
+                        ),
+                    },
+                    location: Some(frame.location.into()),
+                });
             }
 
             self.idx += 1;
