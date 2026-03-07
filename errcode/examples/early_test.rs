@@ -1,8 +1,8 @@
-use errcode::{error_info, Error};
+use errcode::{Error, error_info};
 
 fn main() {
-    let info = error_info!("hello, world! {}", 3);
-    let error = Error::from_info(info);
+    let error = Error::from_info(error_info!("hello, world!"));
+    let error = error.with_context(error_info!("test! {}", 3));
 
     println!("{error}");
 }

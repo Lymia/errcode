@@ -71,12 +71,9 @@ impl Error {
     /// Adds a new context frame to this error type.
     #[inline(never)]
     #[track_caller]
-    pub fn with_context(
-        mut self,
-        info: &'static ErrorInfo,
-        format: Option<&Arguments<'_>>,
-    ) -> Self {
-        self.underlying.push_context(&info.info, format);
+    pub fn with_context(mut self, info: ErrorInfo) -> Self {
+        self.underlying
+            .push_context(&info.info, info.arguments.as_ref());
         self
     }
 }
@@ -97,7 +94,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str("Error trace:")?;
         for frame in self.underlying.iter() {
-            write!(f, "\n  {frame}")?;
+            write!(f, "\n    {frame}")?;
         }
         Ok(())
     }

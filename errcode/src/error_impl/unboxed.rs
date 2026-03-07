@@ -250,12 +250,14 @@ impl Iterator for ErrorImplIter {
             if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
                 let context_first = self.origin_info.context_first();
                 let location = if tag == TAG_STATIC_ORIGINAL {
-                    self.original_location.map(DecodedLocation::from)
+                    self.original_location
+                        .map(DecodedLocation::from)
+                        .or_else(|| context_first.location.map(|x| *x))
                 } else {
                     context_first.location.map(|x| *x)
                 };
                 return Some(ErrorFrame {
-                    data: ErrorFrameData::decode_static(context_first, None),
+                    data: ErrorFrameData::decode_static(Some(context_first), None),
                     location,
                 });
             }
@@ -267,7 +269,7 @@ impl Iterator for ErrorImplIter {
             if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
                 if let Some(context_second) = self.origin_info.context_second() {
                     return Some(ErrorFrame {
-                        data: ErrorFrameData::decode_static(context_second, None),
+                        data: ErrorFrameData::decode_static(Some(context_second), None),
                         location: context_second.location.map(|x| *x),
                     });
                 }

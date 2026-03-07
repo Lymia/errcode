@@ -28,7 +28,7 @@ impl ErrorImplFunctions for ErrorImpl {
             inner: Box::new(ErrorImplInner {
                 steps: vec![ErrorSourceStep {
                     static_info: source,
-                    formatted_message: args.map(|x| x.to_string().into()),
+                    formatted_message: format_args(args),
                     location: Location::caller(),
                 }],
                 current_code: match source {
@@ -44,7 +44,7 @@ impl ErrorImplFunctions for ErrorImpl {
     fn push_context(&mut self, source: &'static ErrorSourceStatic, args: Option<&Arguments<'_>>) {
         let step = ErrorSourceStep {
             static_info: ErrorOrigin::StaticOrigin(source),
-            formatted_message: args.map(|x| x.to_string().into()),
+            formatted_message: format_args(args),
             location: Location::caller(),
         };
         self.inner.steps.push(step);
@@ -62,6 +62,18 @@ impl ErrorImplFunctions for ErrorImpl {
             idx: 0,
             phase: FrameLoopPhase::LocationMismatchFrame,
         }
+    }
+}
+
+fn format_args(args: Option<&Arguments>) -> Option<Cow<'static, str>> {
+    if let Some(args) = args {
+        if let Some(str) = args.as_str() {
+            Some(Cow::Borrowed(str))
+        } else {
+            Some(args.to_string().into())
+        }
+    } else {
+        None
     }
 }
 
@@ -112,28 +124,26 @@ impl Iterator for ErrorImplIter<'_> {
             if self.phase == FrameLoopPhase::Context {
                 self.phase = FrameLoopPhase::Ended;
 
-                let code = match frame.static_info {
-                    ErrorOrigin::StaticOrigin(origin) => origin.error_code,
-                    ErrorOrigin::TypeOrigin(_, origin) => origin.and_then(|x| x.error_code),
+                let info = match frame.static_info {
+                    ErrorOrigin::StaticOrigin(info) => Some(info),
+                    ErrorOrigin::TypeOrigin(_, info) => info,
                 };
                 return Some(ErrorFrame {
                     data: match &frame.formatted_message {
                         None => match frame.static_info {
-                            ErrorOrigin::StaticOrigin(origin) => match origin.message_static {
-                                None => ErrorFrameData::NormalFrame(None, code),
-                                Some(msg) => ErrorFrameData::NormalFrame(
-                                    Some(MessageContainer::Static(msg)),
-                                    code,
-                                ),
-                            },
-                            ErrorOrigin::TypeOrigin(ty, _) => ErrorFrameData::TypeFrame(ty, code),
+                            ErrorOrigin::StaticOrigin(origin) => {
+                                ErrorFrameData::decode_static(Some(origin), None)
+                            }
+                            ErrorOrigin::TypeOrigin(ty, origin) => {
+                                ErrorFrameData::TypeFrame(ty, origin.and_then(|x| x.error_code))
+                            }
                         },
                         Some(Cow::Borrowed(str)) => {
-                            ErrorFrameData::NormalFrame(Some(MessageContainer::Static(str)), code)
+                            ErrorFrameData::decode_static(info, Some(MessageContainer::Static(str)))
                         }
-                        Some(Cow::Owned(str)) => ErrorFrameData::NormalFrame(
+                        Some(Cow::Owned(str)) => ErrorFrameData::decode_static(
+                            info,
                             Some(MessageContainer::Formatted(str.clone())),
-                            code,
                         ),
                     },
                     location: Some(frame.location.into()),

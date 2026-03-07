@@ -14,7 +14,8 @@ pub use error_code::ErrorCode;
 pub mod __macro_export {
     pub use crate::error::new_error_info;
     pub use crate::error_code::ErrorCodePrivate;
-    pub use crate::error_impl::{DecodedLocation, ErrorSourceStatic};
+    pub use crate::error_impl::{DecodedLocation, ErrorSourceStatic, StaticMessageInfo};
+    pub use crate::macros::static_message;
     pub use core;
     pub use core::option::Option::{None, Some};
 }

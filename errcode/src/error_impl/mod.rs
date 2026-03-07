@@ -27,8 +27,7 @@ pub trait ErrorImplFunctions: Clone {
 #[repr(align(4))]
 pub struct ErrorSourceStatic {
     pub error_code: Option<&'static ErrorCodeInfo>,
-    pub message_static: Option<&'static str>,
-    pub is_static_message_incomplete: bool,
+    pub message_static: StaticMessageInfo,
     pub location: Option<&'static DecodedLocation>,
 }
 impl ErrorSourceStatic {
@@ -36,6 +35,13 @@ impl ErrorSourceStatic {
     pub fn is_code_only(&self) -> bool {
         self.location.is_none()
     }
+}
+
+#[derive(Copy, Clone)]
+pub enum StaticMessageInfo {
+    Unformatted(&'static str),
+    NoFormat(&'static str),
+    None,
 }
 
 #[derive(Copy, Clone)]
@@ -73,43 +79,39 @@ impl Display for ErrorFrame {
             ErrorFrameData::TypeFrame(ty, info) => match info {
                 Some(info) if info.message.is_some() => write!(
                     f,
-                    "{} ({}::{})",
+                    "{} [{}::{}]",
                     info.message.unwrap(),
                     info.type_name,
                     info.variant_name
                 )?,
-                Some(info) => write!(
-                    f,
-                    "<converted from type: {}> ({}::{})",
-                    ty, info.type_name, info.variant_name
-                )?,
-                None => write!(f, "<converted from type: {}>", ty)?,
+                Some(info) => {
+                    write!(f, "<from type: {}> [{}::{}]", ty, info.type_name, info.variant_name)?
+                }
+                None => write!(f, "<from type: {}>", ty)?,
             },
             ErrorFrameData::NormalFrame(msg, info) => match info {
                 Some(info) if info.message.is_some() && msg.is_none() => write!(
                     f,
-                    "{} ({}::{})",
+                    "{} [{}::{}]",
                     info.message.unwrap(),
                     info.type_name,
                     info.variant_name
                 )?,
                 Some(info) if msg.is_some() => write!(
                     f,
-                    "{} ({}::{})",
+                    "{} [{}::{}]",
                     msg.as_ref().unwrap(),
                     info.type_name,
                     info.variant_name
                 )?,
-                Some(info) => {
-                    write!(f, "<no message given> ({}::{})", info.type_name, info.variant_name)?
-                }
+                Some(info) => write!(f, "[{}::{}]", info.type_name, info.variant_name)?,
                 None if msg.is_some() => write!(f, "{}", msg.as_ref().unwrap())?,
-                None => write!(f, "<no message or code given???>")?,
+                None => write!(f, "<internal error: no message or code given???>")?,
             },
         }
 
         if let Some(location) = &self.location {
-            write!(f, " at {}:{}:{}", location.module, location.line, location.column)?;
+            write!(f, " (at {}:{}:{})", location.module, location.line, location.column)?;
         }
 
         Ok(())
@@ -131,20 +133,18 @@ enum ErrorFrameData {
 }
 impl ErrorFrameData {
     fn decode_static(
-        data: &'static ErrorSourceStatic,
+        data: Option<&'static ErrorSourceStatic>,
         formatted: Option<MessageContainer>,
     ) -> ErrorFrameData {
         ErrorFrameData::NormalFrame(
-            formatted.or_else(|| {
-                data.message_static.map(|msg| {
-                    if data.is_static_message_incomplete {
-                        MessageContainer::IncompleteStatic(msg)
-                    } else {
-                        MessageContainer::Static(msg)
-                    }
-                })
+            formatted.or_else(|| match data.map(|x| x.message_static) {
+                Some(StaticMessageInfo::Unformatted(msg)) => {
+                    Some(MessageContainer::IncompleteStatic(msg))
+                }
+                Some(StaticMessageInfo::NoFormat(msg)) => Some(MessageContainer::Static(msg)),
+                _ => None,
             }),
-            data.error_code,
+            data.and_then(|x| x.error_code),
         )
     }
 }
@@ -176,13 +176,14 @@ impl MessageContainer {
 impl Display for MessageContainer {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         if self.is_incomplete() {
-            write!(f, "<unformatted message:>")?;
+            write!(f, "<unformatted:> ")?;
         }
         write!(f, "{}", self.as_str())?;
         Ok(())
     }
 }
 
+#[allow(dead_code)]
 enum InternalContextType {
     /// Used to represent when an error type is constructed at a significantly different location
     /// from the `Location` stored in the error type.
@@ -202,7 +203,7 @@ enum InternalContextType {
 impl InternalContextType {
     fn message(&self) -> &'static str {
         match self {
-            InternalContextType::ErrorTypeConstructed => "<ErrorInfo constructed at:>",
+            InternalContextType::ErrorTypeConstructed => "<ErrorInfo constructed>",
             InternalContextType::OriginalTypeLost => "<original error type lost>",
             InternalContextType::FurtherFramesOmitted => "<some frames have been omitted>",
         }
