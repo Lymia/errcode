@@ -1,5 +1,5 @@
 [package]
-name = "enumset"
+name = "errcode"
 version = "0.1.0"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2024"

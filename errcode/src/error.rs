@@ -9,6 +9,25 @@ pub struct Error {
     underlying: ErrorImpl,
 }
 impl Error {
+    #[inline(never)]
+    #[track_caller]
+    pub fn from_info(info: ErrorInfo) -> Self {
+        Error {
+            underlying: ErrorImpl::new(
+                ErrorOrigin::StaticOrigin(info.info),
+                info.arguments.as_ref(),
+            ),
+        }
+    }
+
+    #[inline(never)]
+    #[track_caller]
+    pub fn from_code<T: ErrorCode>(code: T) -> Self {
+        Error {
+            underlying: ErrorImpl::new(ErrorOrigin::StaticOrigin(T::error_source(code)), None),
+        }
+    }
+
     /// Returns whether this error has an error code.
     #[inline(always)]
     pub fn has_code(&self) -> bool {
@@ -86,11 +105,18 @@ impl Display for Error {
 
 #[derive(Copy, Clone)]
 pub struct ErrorInfo<'a> {
-    pub(crate) info: ErrorSourceStatic,
-    pub(crate) arguments: Option<Arguments<'a>>,
+    info: &'static ErrorSourceStatic,
+    arguments: Option<Arguments<'a>>,
 }
 
 #[inline(never)]
 fn error_code_for_error<T>(_value: &T) -> Option<&'static ErrorSourceStatic> {
     None
+}
+
+pub const fn new_error_info<'a>(
+    info: &'static ErrorSourceStatic,
+    arguments: Option<Arguments<'a>>,
+) -> ErrorInfo<'a> {
+    ErrorInfo { info, arguments }
 }
