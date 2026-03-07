@@ -2,6 +2,7 @@
 
 use crate::error_impl::ErrorSourceStatic;
 use core::any::TypeId;
+use core::fmt::{Debug, Formatter};
 
 /// Represents the info underlying an error code.
 pub struct ErrorCodeInfo {
@@ -31,6 +32,14 @@ impl ErrorCodeInfo {
         } else {
             None
         }
+    }
+}
+impl Debug for ErrorCodeInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("ErrorCodeInfo")
+            .field("variant", &format_args!("{}::{}", self.type_name, self.value))
+            .field("message", &self.message)
+            .finish()
     }
 }
 

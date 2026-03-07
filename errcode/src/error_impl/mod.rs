@@ -44,7 +44,7 @@ pub enum StaticMessageInfo {
     None,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct DecodedLocation {
     pub module: &'static str,
     pub line: u32,
@@ -68,6 +68,7 @@ pub enum ErrorOrigin {
 }
 
 /// A decoded frame of error information, retrieved from an [`ErrorImpl`].
+#[derive(Debug)]
 pub struct ErrorFrame {
     data: ErrorFrameData,
     location: Option<DecodedLocation>,
@@ -111,7 +112,7 @@ impl Display for ErrorFrame {
         }
 
         if let Some(location) = &self.location {
-            write!(f, " (at {}:{}:{})", location.module, location.line, location.column)?;
+            write!(f, " [at {}:{}:{}]", location.module, location.line, location.column)?;
         }
 
         Ok(())
@@ -119,6 +120,7 @@ impl Display for ErrorFrame {
 }
 
 /// The data represented by an error frame.
+#[derive(Debug)]
 enum ErrorFrameData {
     /// Used to represent a frame of context that doesn't "really" exist, but should be reported
     /// to the user anyway.
@@ -149,6 +151,7 @@ impl ErrorFrameData {
     }
 }
 
+#[derive(Debug)]
 enum MessageContainer {
     /// Used to represent a static message given by the user.
     Static(&'static str),
@@ -184,6 +187,7 @@ impl Display for MessageContainer {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 enum InternalContextType {
     /// Used to represent when an error type is constructed at a significantly different location
     /// from the `Location` stored in the error type.

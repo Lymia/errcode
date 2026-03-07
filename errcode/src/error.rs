@@ -1,7 +1,7 @@
 use crate::error_code::ErrorCode;
 use crate::error_impl::{ErrorImpl, ErrorImplFunctions, ErrorOrigin, ErrorSourceStatic};
 use core::any::{TypeId, type_name};
-use core::fmt::{Arguments, Display, Formatter};
+use core::fmt::{Arguments, Debug, Display, Formatter};
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -25,6 +25,23 @@ impl Error {
     pub fn from_code<T: ErrorCode>(code: T) -> Self {
         Error {
             underlying: ErrorImpl::new(ErrorOrigin::StaticOrigin(T::error_source(code)), None),
+        }
+    }
+
+    #[inline(never)]
+    #[track_caller]
+    pub fn from_type(name: &'static str) -> Self {
+        Error { underlying: ErrorImpl::new(ErrorOrigin::TypeOrigin(name, None), None) }
+    }
+
+    #[inline(never)]
+    #[track_caller]
+    pub fn from_type_with_code<T: ErrorCode>(name: &'static str, code: T) -> Self {
+        Error {
+            underlying: ErrorImpl::new(
+                ErrorOrigin::TypeOrigin(name, Some(T::error_source(code))),
+                None,
+            ),
         }
     }
 
@@ -76,6 +93,14 @@ impl Error {
             .push_context(&info.info, info.arguments.as_ref());
         self
     }
+
+    /// Adds a new context frame to this error type.
+    #[inline(never)]
+    #[track_caller]
+    pub fn with_context_code<T: ErrorCode>(mut self, info: T) -> Self {
+        self.underlying.push_context(T::error_source(info), None);
+        self
+    }
 }
 impl<T: core::error::Error> From<T> for Error {
     #[inline(never)]
@@ -88,6 +113,15 @@ impl<T: core::error::Error> From<T> for Error {
                 Some(&format_args!("{value}")),
             ),
         }
+    }
+}
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let mut list = f.debug_list();
+        for frame in self.underlying.iter() {
+            list.entry(&format_args!("{:?}", frame));
+        }
+        list.finish()
     }
 }
 impl Display for Error {

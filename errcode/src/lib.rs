@@ -5,9 +5,20 @@ mod error;
 mod error_code;
 mod error_impl;
 mod macros;
+mod traits;
 
 pub use error::{Error, ErrorInfo};
 pub use error_code::ErrorCode;
+
+/// A module containing helpful imports for using this crate.
+pub mod prelude {
+    use crate::Error;
+
+    /// A convince wrapper over the [`Result`](`core::result::Result`) type.
+    pub type Result<T> = core::result::Result<T, Error>;
+
+    pub use crate::traits::{ConvertErrorHelper, IntoErrorHelper};
+}
 
 /// NOT PUBLIC API!
 #[doc(hidden)]

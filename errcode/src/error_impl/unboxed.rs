@@ -16,6 +16,7 @@ impl ErrorImplFunctions for ErrorImpl {
     type FrameIter<'a> = ErrorImplIter;
 
     #[cfg_attr(feature = "repr_unboxed_location", track_caller)]
+    #[inline(never)]
     fn new(source: ErrorOrigin, _args: Option<&Arguments<'_>>) -> ErrorImpl {
         ErrorImpl {
             origin_info: PackedOriginInfo::for_origin(source),
@@ -24,6 +25,7 @@ impl ErrorImplFunctions for ErrorImpl {
         }
     }
 
+    #[inline(never)]
     fn push_context(&mut self, source: &'static ErrorSourceStatic, _args: Option<&Arguments<'_>>) {
         self.origin_info = self.origin_info.with_context(source);
     }

@@ -23,6 +23,7 @@ impl ErrorImplFunctions for ErrorImpl {
     type FrameIter<'a> = ErrorImplIter<'a>;
 
     #[track_caller]
+    #[inline(never)]
     fn new(source: ErrorOrigin, args: Option<&Arguments<'_>>) -> ErrorImpl {
         ErrorImpl {
             inner: Box::new(ErrorImplInner {
@@ -41,6 +42,7 @@ impl ErrorImplFunctions for ErrorImpl {
     }
 
     #[track_caller]
+    #[inline(never)]
     fn push_context(&mut self, source: &'static ErrorSourceStatic, args: Option<&Arguments<'_>>) {
         let step = ErrorSourceStep {
             static_info: ErrorOrigin::StaticOrigin(source),
