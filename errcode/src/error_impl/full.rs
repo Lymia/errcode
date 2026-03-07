@@ -61,8 +61,8 @@ impl ErrorImplFunctions for ErrorImpl {
     fn iter(&self) -> Self::FrameIter<'_> {
         ErrorImplIter {
             underlying: &self.inner,
-            idx: 0,
-            phase: FrameLoopPhase::LocationMismatchFrame,
+            idx: self.inner.steps.len(),
+            phase: FrameLoopPhase::Context,
         }
     }
 }
@@ -93,38 +93,18 @@ pub struct ErrorImplIter<'a> {
 }
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum FrameLoopPhase {
-    LocationMismatchFrame,
     Context,
+    LocationMismatchFrame,
     Ended,
 }
 impl Iterator for ErrorImplIter<'_> {
     type Item = ErrorFrame;
     fn next(&mut self) -> Option<Self::Item> {
-        while self.idx < self.underlying.steps.len() {
-            let frame = &self.underlying.steps[self.idx];
-
-            if self.phase == FrameLoopPhase::LocationMismatchFrame {
-                self.phase = FrameLoopPhase::Context;
-
-                let location = DecodedLocation::from(frame.location);
-                let origin = match &frame.static_info {
-                    ErrorOrigin::StaticOrigin(origin) => origin.location,
-                    ErrorOrigin::TypeOrigin(_, origin) => origin.and_then(|x| x.location),
-                };
-                if let Some(origin) = origin {
-                    if !origin.is_same(location) {
-                        return Some(ErrorFrame {
-                            data: ErrorFrameData::InternalContext(
-                                InternalContextType::ErrorTypeConstructed,
-                            ),
-                            location: Some(*origin),
-                        });
-                    }
-                }
-            }
+        while self.idx > 0 {
+            let frame = &self.underlying.steps[self.idx - 1];
 
             if self.phase == FrameLoopPhase::Context {
-                self.phase = FrameLoopPhase::Ended;
+                self.phase = FrameLoopPhase::LocationMismatchFrame;
 
                 let info = match frame.static_info {
                     ErrorOrigin::StaticOrigin(info) => Some(info),
@@ -152,7 +132,27 @@ impl Iterator for ErrorImplIter<'_> {
                 });
             }
 
-            self.idx += 1;
+            if self.phase == FrameLoopPhase::LocationMismatchFrame {
+                self.phase = FrameLoopPhase::Ended;
+
+                let location = DecodedLocation::from(frame.location);
+                let origin = match &frame.static_info {
+                    ErrorOrigin::StaticOrigin(origin) => origin.location,
+                    ErrorOrigin::TypeOrigin(_, origin) => origin.and_then(|x| x.location),
+                };
+                if let Some(origin) = origin {
+                    if !origin.is_same(location) {
+                        return Some(ErrorFrame {
+                            data: ErrorFrameData::InternalContext(
+                                InternalContextType::ErrorTypeConstructed,
+                            ),
+                            location: Some(*origin),
+                        });
+                    }
+                }
+            }
+
+            self.idx -= 1;
             self.phase = FrameLoopPhase::Context;
         }
         None

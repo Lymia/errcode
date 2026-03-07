@@ -1,4 +1,5 @@
 use errcode::{Error, error_info};
+use errcode::prelude::ConvertErrorHelper;
 
 fn io_test(f: &str) -> Result<String, Error> {
     let result = std::fs::read_to_string(f)?;
@@ -13,7 +14,7 @@ fn main() {
     println!("{:?}", io_test("/etc/os-release"));
     println!("{:?}", io_test("/etc/does-not-exist"));
 
-    if let Err(e) = io_test("/etc/does-not-exist") {
+    if let Err(e) = io_test("/etc/does-not-exist").with_context(error_info!("context")) {
         println!("{}", e)
     } else {
         panic!()

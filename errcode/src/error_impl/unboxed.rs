@@ -36,7 +36,7 @@ impl ErrorImplFunctions for ErrorImpl {
 
     fn iter(&self) -> Self::FrameIter<'_> {
         ErrorImplIter {
-            phase: ErrorIterPhase::TypeContext,
+            phase: ErrorIterPhase::LastContext,
             origin_info: self.origin_info,
             #[cfg(feature = "repr_unboxed_location")]
             original_location: self.original_location,
@@ -192,10 +192,10 @@ pub struct ErrorImplIter {
 }
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum ErrorIterPhase {
-    TypeContext,
-    LocationMismatchFrame,
-    FirstContext,
     LastContext,
+    FirstContext,
+    LocationMismatchFrame,
+    TypeContext,
     FramesOmitted,
     Ended,
 }
@@ -204,23 +204,34 @@ impl Iterator for ErrorImplIter {
     fn next(&mut self) -> Option<Self::Item> {
         let tag = self.origin_info.tag();
 
-        // emits a type context frame if we are a static type node.
-        if self.phase == ErrorIterPhase::TypeContext {
-            self.phase = ErrorIterPhase::LocationMismatchFrame;
+        // returns the last context frame
+        if self.phase == ErrorIterPhase::LastContext {
+            self.phase = ErrorIterPhase::FirstContext;
+            if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
+                if let Some(context_second) = self.origin_info.context_second() {
+                    return Some(ErrorFrame {
+                        data: ErrorFrameData::decode_static(Some(context_second), None),
+                        location: context_second.location.map(|x| *x),
+                    });
+                }
+            }
+        }
 
-            if tag == TAG_STATIC_TYPE_ONLY {
-                // we have a static type node!
-                // we know it's ended at this point, save some time
-                self.phase = ErrorIterPhase::Ended;
+        // returns the first context frame
+        if self.phase == ErrorIterPhase::FirstContext {
+            self.phase = ErrorIterPhase::LocationMismatchFrame;
+            if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
+                let context_first = self.origin_info.context_first();
+                let location = if tag == TAG_STATIC_ORIGINAL {
+                    self.original_location
+                        .map(DecodedLocation::from)
+                        .or_else(|| context_first.location.map(|x| *x))
+                } else {
+                    context_first.location.map(|x| *x)
+                };
                 return Some(ErrorFrame {
-                    data: ErrorFrameData::TypeFrame(self.origin_info.ty_name(), None),
-                    location: self.original_location.map(DecodedLocation::from),
-                });
-            } else if tag == TAG_STATIC_CONTEXT_ONLY {
-                // we have a former type node that we appended context to
-                return Some(ErrorFrame {
-                    data: ErrorFrameData::InternalContext(InternalContextType::OriginalTypeLost),
-                    location: self.original_location.map(DecodedLocation::from),
+                    data: ErrorFrameData::decode_static(Some(context_first), None),
+                    location,
                 });
             }
         }
@@ -228,7 +239,7 @@ impl Iterator for ErrorImplIter {
         // emits a "location mismatch" frame if the error construction is far from the first
         // context's error frame
         if self.phase == ErrorIterPhase::LocationMismatchFrame {
-            self.phase = ErrorIterPhase::FirstContext;
+            self.phase = ErrorIterPhase::TypeContext;
             if tag == TAG_STATIC_ORIGINAL {
                 let context_first = self.origin_info.context_first();
                 if let Some(location_a) = context_first.location
@@ -246,39 +257,26 @@ impl Iterator for ErrorImplIter {
             }
         }
 
-        // returns the first context frame
-        if self.phase == ErrorIterPhase::FirstContext {
-            self.phase = ErrorIterPhase::LastContext;
-            if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
-                let context_first = self.origin_info.context_first();
-                let location = if tag == TAG_STATIC_ORIGINAL {
-                    self.original_location
-                        .map(DecodedLocation::from)
-                        .or_else(|| context_first.location.map(|x| *x))
-                } else {
-                    context_first.location.map(|x| *x)
-                };
+        // emits a type context frame if we are a static type node.
+        if self.phase == ErrorIterPhase::TypeContext {
+            self.phase = ErrorIterPhase::FramesOmitted;
+
+            if tag == TAG_STATIC_TYPE_ONLY {
+                // we have a static type node!
                 return Some(ErrorFrame {
-                    data: ErrorFrameData::decode_static(Some(context_first), None),
-                    location,
+                    data: ErrorFrameData::TypeFrame(self.origin_info.ty_name(), None),
+                    location: self.original_location.map(DecodedLocation::from),
+                });
+            } else if tag == TAG_STATIC_CONTEXT_ONLY {
+                // we have a former type node that we appended context to
+                return Some(ErrorFrame {
+                    data: ErrorFrameData::InternalContext(InternalContextType::OriginalTypeLost),
+                    location: self.original_location.map(DecodedLocation::from),
                 });
             }
         }
 
-        // returns the last context frame
-        if self.phase == ErrorIterPhase::LastContext {
-            self.phase = ErrorIterPhase::FramesOmitted;
-            if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
-                if let Some(context_second) = self.origin_info.context_second() {
-                    return Some(ErrorFrame {
-                        data: ErrorFrameData::decode_static(Some(context_second), None),
-                        location: context_second.location.map(|x| *x),
-                    });
-                }
-            }
-        }
-
-        // returns the frames ommitted message, if needed
+        // returns the frames omitted message, if needed
         if self.phase == ErrorIterPhase::FramesOmitted {
             self.phase = ErrorIterPhase::Ended;
             if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {

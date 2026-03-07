@@ -20,6 +20,9 @@ maintenance = { status = "actively-developed" }
 
 [features]
 
+# Enables the procedural macro for deriving `ErrorCode`.
+derive = []
+
 ######################
 # Repr feature flags #
 ######################

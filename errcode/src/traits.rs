@@ -57,6 +57,7 @@ impl<T, E: Any> IntoErrorHelper for Result<T, E> {
 }
 
 #[inline(never)]
+#[track_caller]
 fn name_and_info(name: &'static str, info: ErrorInfo) -> Error {
     Error::from_type(name).with_context(info)
 }
@@ -65,12 +66,18 @@ impl<T> ConvertErrorHelper for Result<T, Error> {
     #[inline(always)]
     #[track_caller]
     fn with_context(self, info: ErrorInfo) -> Self {
-        self.map_err(|x| x.with_context(info))
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => Err(e.with_context(info)),
+        }
     }
 
     #[inline(always)]
     #[track_caller]
     fn with_context_code<C: ErrorCode>(self, code: C) -> Self {
-        self.map_err(|x| x.with_context_code(code))
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => Err(e.with_context_code(code)),
+        }
     }
 }
