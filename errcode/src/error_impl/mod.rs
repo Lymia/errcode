@@ -80,32 +80,32 @@ impl Display for ErrorFrameImpl {
             ErrorFrameData::TypeFrame(ty, info) => match info {
                 Some(info) if info.message.is_some() => write!(
                     f,
-                    "{} [{}::{}]",
+                    "{} ({}::{})",
                     info.message.unwrap(),
                     info.type_name,
                     info.variant_name
                 )?,
                 Some(info) => {
-                    write!(f, "<from type: {}> [{}::{}]", ty, info.type_name, info.variant_name)?
+                    write!(f, "<from type: {}> ({}::{})", ty, info.type_name, info.variant_name)?
                 }
                 None => write!(f, "<from type: {}>", ty)?,
             },
             ErrorFrameData::NormalFrame(msg, info) => match info {
                 Some(info) if info.message.is_some() && msg.is_none() => write!(
                     f,
-                    "{} [{}::{}]",
+                    "{} ({}::{})",
                     info.message.unwrap(),
                     info.type_name,
                     info.variant_name
                 )?,
                 Some(info) if msg.is_some() => write!(
                     f,
-                    "{} [{}::{}]",
+                    "{} ({}::{})",
                     msg.as_ref().unwrap(),
                     info.type_name,
                     info.variant_name
                 )?,
-                Some(info) => write!(f, "[{}::{}]", info.type_name, info.variant_name)?,
+                Some(info) => write!(f, "{}::{}", info.type_name, info.variant_name)?,
                 None if msg.is_some() => write!(f, "{}", msg.as_ref().unwrap())?,
                 None => write!(f, "<internal error: no message or code given???>")?,
             },

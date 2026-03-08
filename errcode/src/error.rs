@@ -128,9 +128,12 @@ impl Debug for Error {
 }
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str("Error trace:")?;
-        for frame in self.underlying.iter() {
-            write!(f, "\n    {frame}")?;
+        let mut iter = self.underlying.iter();
+        if let Some(frame) = iter.next() {
+            write!(f, "{frame}")?;
+        }
+        for frame in iter {
+            write!(f, "\n    caused by: {frame}")?;
         }
         Ok(())
     }
