@@ -87,7 +87,7 @@ const fn is_argument_str(string: &'static str) -> bool {
     let mut idx = 0;
     while idx < bytes.len() {
         if bytes[idx] == b'{' && idx != bytes.len() - 1 {
-            if bytes[idx] + 1 == b'{' {
+            if bytes[idx + 1] == b'{' {
                 idx += 1;
             } else {
                 return true;

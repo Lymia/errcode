@@ -50,7 +50,9 @@ impl ErrorImplFunctions for ErrorImpl {
             location: Location::caller(),
         };
         self.inner.steps.push(step);
-        self.inner.current_code = source.error_code;
+        if source.error_code.is_some() {
+            self.inner.current_code = source.error_code;
+        }
     }
 
     #[inline(always)]

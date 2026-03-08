@@ -39,7 +39,7 @@ impl ErrorImplFunctions for ErrorImpl {
             phase: ErrorIterPhase::LastContext,
             origin_info: self.origin_info,
             #[cfg(feature = "repr_unboxed_location")]
-            original_location: self.original_location,
+            original_location: Some(self.original_location),
             #[cfg(not(feature = "repr_unboxed_location"))]
             original_location: None,
         }
