@@ -1,6 +1,6 @@
 //! Contains the raw implementation of the error code API.
 
-use crate::error_impl::ErrorSourceStatic;
+use crate::error_impl::ErrorInfoImpl;
 use core::any::TypeId;
 use core::fmt::{Debug, Formatter};
 
@@ -44,15 +44,20 @@ impl Debug for ErrorCodeInfo {
 }
 
 /// A type that can be used as an error code for this crate.
-pub trait ErrorCode: 'static + Copy + Eq + ErrorCodePrivate {}
+pub trait ErrorCode: 'static + ErrorCodePrivate {}
 
 /// The internal error code trait implementation.
-pub trait ErrorCodePrivate: 'static + Copy {
-    /// Returns the internal error info code for this type.
-    fn info(self) -> &'static ErrorCodeInfo;
+pub trait ErrorCodePrivate: 'static {
+    /// Helper type for constant time operations.
+    ///
+    /// contains: `const fn info(self) -> &'static ErrorCodeInfo;`
+    type ConstHelper;
+
+    /// The instance of `ConstHelper`.
+    const CONST_HELPER_INSTANCE: Self::ConstHelper;
 
     /// Returns the internal error info code for this type.
-    fn error_source(self) -> &'static ErrorSourceStatic;
+    fn error_source(self) -> &'static ErrorInfoImpl;
 
     /// Returns true if the value matches this enum.
     fn is_value(self, value: u32) -> bool;

@@ -26,7 +26,7 @@ impl ErrorImplFunctions for ErrorImpl {
     }
 
     #[inline(never)]
-    fn push_context(&mut self, source: &'static ErrorSourceStatic, _args: Option<&Arguments<'_>>) {
+    fn push_context(&mut self, source: &'static ErrorInfoImpl, _args: Option<&Arguments<'_>>) {
         self.origin_info = self.origin_info.with_context(source);
     }
 
@@ -104,7 +104,7 @@ impl PackedOriginInfo {
         self.tag.get() & TAG_MASK
     }
 
-    fn with_context(mut self, source: &'static ErrorSourceStatic) -> Self {
+    fn with_context(mut self, source: &'static ErrorInfoImpl) -> Self {
         unsafe {
             match self.tag() {
                 TAG_STATIC_ORIGINAL | TAG_STATIC_CONTEXT_ONLY => {
@@ -112,7 +112,7 @@ impl PackedOriginInfo {
                         self.additional = source as *const _ as usize;
                         self
                     } else {
-                        let original = &*(self.additional as *const ErrorSourceStatic);
+                        let original = &*(self.additional as *const ErrorInfoImpl);
                         if original.error_code.is_none() || source.error_code.is_some() {
                             self.additional = source as *const _ as usize;
                             self.additional |= OMITTED_BIT_MASK;
@@ -144,20 +144,20 @@ impl PackedOriginInfo {
         }
     }
 
-    fn context_first(&self) -> &'static ErrorSourceStatic {
+    fn context_first(&self) -> &'static ErrorInfoImpl {
         unsafe {
             assert!(self.tag() == TAG_STATIC_ORIGINAL || self.tag() == TAG_STATIC_CONTEXT_ONLY);
-            &*((self.tag.get() & !TAG_MASK) as *const ErrorSourceStatic)
+            &*((self.tag.get() & !TAG_MASK) as *const ErrorInfoImpl)
         }
     }
 
-    fn context_second(&self) -> Option<&'static ErrorSourceStatic> {
+    fn context_second(&self) -> Option<&'static ErrorInfoImpl> {
         unsafe {
             assert!(self.tag() == TAG_STATIC_ORIGINAL || self.tag() == TAG_STATIC_CONTEXT_ONLY);
             if (self.additional & !OMITTED_BIT_MASK) == 0 {
                 None
             } else {
-                Some(&*((self.additional & !OMITTED_BIT_MASK) as *const ErrorSourceStatic))
+                Some(&*((self.additional & !OMITTED_BIT_MASK) as *const ErrorInfoImpl))
             }
         }
     }
@@ -298,5 +298,5 @@ impl Iterator for ErrorImplIter {
 
 const _CHECK_REQUIRED_ALIGNMENT: () = {
     let required_alignment = 4;
-    assert!(align_of::<ErrorSourceStatic>() >= required_alignment);
+    assert!(align_of::<ErrorInfoImpl>() >= required_alignment);
 };

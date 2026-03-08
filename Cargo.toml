@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "errcode",
+    "errcode_derive",
 ]
 resolver = "2"
 

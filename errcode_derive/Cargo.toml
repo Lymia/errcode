@@ -1,0 +1,20 @@
+[package]
+name = "errcode_derive"
+version = "0.1.0"
+authors = ["Alissa Rao <aura@aura.moe>"]
+edition = "2024"
+
+description = "An internal helper crate for errcode. Not public API."
+
+documentation = "https://docs.rs/errcode_derive/latest/errcode_derive/"
+repository = "https://github.com/Lymia/errcode"
+
+license = "MIT/Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1"
+venial = "0.6.1"

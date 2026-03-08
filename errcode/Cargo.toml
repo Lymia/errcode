@@ -43,3 +43,4 @@ repr_unboxed = []
 repr_unboxed_location = []
 
 [dependencies]
+errcode_derive = { version = "0.1.0", path = "../errcode_derive" }

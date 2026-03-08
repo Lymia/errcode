@@ -43,7 +43,7 @@ impl ErrorImplFunctions for ErrorImpl {
 
     #[track_caller]
     #[inline(never)]
-    fn push_context(&mut self, source: &'static ErrorSourceStatic, args: Option<&Arguments<'_>>) {
+    fn push_context(&mut self, source: &'static ErrorInfoImpl, args: Option<&Arguments<'_>>) {
         let step = ErrorSourceStep {
             static_info: ErrorOrigin::StaticOrigin(source),
             formatted_message: format_args(args),

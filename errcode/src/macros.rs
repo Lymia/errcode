@@ -1,4 +1,5 @@
-use crate::error_impl::StaticMessageInfo;
+use crate::error_code::{ErrorCodeInfo, ErrorCodePrivate};
+use crate::error_impl::{ErrorInfoImpl, StaticMessageInfo};
 
 /// Creates a new [`ErrorInfo`].
 ///
@@ -10,7 +11,7 @@ macro_rules! error_info {
     };
     ($format:literal, $($arguments:tt)*) => {
         $crate::__macro_export::new_error_info(
-            &$crate::__macro_export::ErrorSourceStatic {
+            &$crate::__macro_export::ErrorInfoImpl {
                 error_code: $crate::__macro_export::None,
                 message_static: const {
                     $crate::__macro_export::static_message(
@@ -33,7 +34,7 @@ macro_rules! error_info {
     };
     ($code:path $(,)?) => {
         $crate::__macro_export::new_error_info(
-            &$crate::__macro_export::ErrorSourceStatic {
+            &$crate::__macro_export::ErrorInfoImpl {
                 error_code: $crate::__macro_export::Some(
                     $crate::__macro_export::ErrorCodePrivate::info($code),
                 ),
@@ -50,14 +51,16 @@ macro_rules! error_info {
         )
     };
     ($code:path, $format:literal) => {
-        $crate::error_code!($code, $format,)
+        $crate::error_info!($code, $format,)
     };
     ($code:path, $format:literal, $($arguments:tt)*) => {
         $crate::__macro_export::new_error_info(
-            &$crate::__macro_export::ErrorSourceStatic {
-                error_code: $crate::__macro_export::Some(
-                    $crate::__macro_export::ErrorCodePrivate::info($code),
-                ),
+            &$crate::__macro_export::ErrorInfoImpl {
+                error_code: const {
+                    $crate::__macro_export::Some(
+                        $crate::__macro_export::get_helper(&$code).info($code),
+                    )
+                },
                 message_static: const {
                     $crate::__macro_export::static_message(
                         $format,
@@ -79,7 +82,7 @@ macro_rules! error_info {
     };
 }
 
-pub const fn is_argument_str(string: &'static str) -> bool {
+const fn is_argument_str(string: &'static str) -> bool {
     let bytes = string.as_bytes();
     let mut idx = 0;
     while idx < bytes.len() {
@@ -100,5 +103,17 @@ pub const fn static_message(format: &'static str, stringified: &'static str) -> 
         StaticMessageInfo::Unformatted(stringified)
     } else {
         StaticMessageInfo::NoFormat(format)
+    }
+}
+
+pub const fn get_helper<T: ErrorCodePrivate>(_t: &T) -> T::ConstHelper {
+    T::CONST_HELPER_INSTANCE
+}
+
+pub const fn wrap_code(code: &'static ErrorCodeInfo) -> ErrorInfoImpl {
+    ErrorInfoImpl {
+        error_code: Some(code),
+        message_static: StaticMessageInfo::None,
+        location: None,
     }
 }

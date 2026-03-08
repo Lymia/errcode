@@ -14,7 +14,7 @@ pub trait ErrorImplFunctions: Clone {
     fn new(source: ErrorOrigin, args: Option<&Arguments<'_>>) -> ErrorImpl;
 
     /// Pushes a new context frame onto this type.
-    fn push_context(&mut self, source: &'static ErrorSourceStatic, args: Option<&Arguments<'_>>);
+    fn push_context(&mut self, source: &'static ErrorInfoImpl, args: Option<&Arguments<'_>>);
 
     /// Gets the current error code of this type.
     fn code(&self) -> Option<&'static ErrorCodeInfo>;
@@ -25,12 +25,12 @@ pub trait ErrorImplFunctions: Clone {
 
 #[derive(Copy, Clone)]
 #[repr(align(4))]
-pub struct ErrorSourceStatic {
+pub struct ErrorInfoImpl {
     pub error_code: Option<&'static ErrorCodeInfo>,
     pub message_static: StaticMessageInfo,
     pub location: Option<&'static DecodedLocation>,
 }
-impl ErrorSourceStatic {
+impl ErrorInfoImpl {
     /// Returns `true` if the only information in this object is the error code itself.
     pub fn is_code_only(&self) -> bool {
         self.location.is_none()
@@ -63,8 +63,8 @@ impl DecodedLocation {
 
 #[derive(Copy, Clone)]
 pub enum ErrorOrigin {
-    StaticOrigin(&'static ErrorSourceStatic),
-    TypeOrigin(&'static str, Option<&'static ErrorSourceStatic>),
+    StaticOrigin(&'static ErrorInfoImpl),
+    TypeOrigin(&'static str, Option<&'static ErrorInfoImpl>),
 }
 
 /// A decoded frame of error information, retrieved from an [`ErrorImpl`].
@@ -135,7 +135,7 @@ enum ErrorFrameData {
 }
 impl ErrorFrameData {
     fn decode_static(
-        data: Option<&'static ErrorSourceStatic>,
+        data: Option<&'static ErrorInfoImpl>,
         formatted: Option<MessageContainer>,
     ) -> ErrorFrameData {
         ErrorFrameData::NormalFrame(

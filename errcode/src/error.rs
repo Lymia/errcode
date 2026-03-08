@@ -1,5 +1,5 @@
 use crate::error_code::ErrorCode;
-use crate::error_impl::{ErrorImpl, ErrorImplFunctions, ErrorOrigin, ErrorSourceStatic};
+use crate::error_impl::{ErrorImpl, ErrorImplFunctions, ErrorOrigin, ErrorInfoImpl};
 use core::any::{TypeId, type_name};
 use core::fmt::{Arguments, Debug, Display, Formatter};
 
@@ -136,17 +136,17 @@ impl Display for Error {
 
 #[derive(Copy, Clone)]
 pub struct ErrorInfo<'a> {
-    info: &'static ErrorSourceStatic,
+    info: &'static ErrorInfoImpl,
     arguments: Option<Arguments<'a>>,
 }
 
 #[inline(never)]
-fn error_code_for_error<T>(_value: &T) -> Option<&'static ErrorSourceStatic> {
+fn error_code_for_error<T>(_value: &T) -> Option<&'static ErrorInfoImpl> {
     None
 }
 
 pub const fn new_error_info<'a>(
-    info: &'static ErrorSourceStatic,
+    info: &'static ErrorInfoImpl,
     arguments: Option<Arguments<'a>>,
 ) -> ErrorInfo<'a> {
     ErrorInfo { info, arguments }
