@@ -6,4 +6,3 @@ name = "errcode"
 changelog_include = ["errcode_derive"]
 changelog_path = "CHANGELOG.md"
 changelog_update = true
-git_release_enable = true
