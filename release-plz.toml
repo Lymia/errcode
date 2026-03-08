@@ -1,12 +1,11 @@
-[workspace]
-changelog_update = false
-git_release_enable = false
-
 [[package]]
 name = "errcode"
 changelog_include = ["errcode_derive"]
 changelog_path = "CHANGELOG.md"
 changelog_update = true
+git_release_enable = false
 
-[changelog]
-trim = true
+[[package]]
+name = "errcode_derive"
+changelog_update = false
+git_release_enable = false
