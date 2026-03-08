@@ -7,7 +7,7 @@ use core::panic::Location;
 /// Common trait for [`ErrorImpl`] variants.
 pub trait ErrorImplFunctions: Clone {
     /// The iterator type used to iterate frames.
-    type FrameIter<'a>: Iterator<Item = ErrorFrame> + 'a
+    type FrameIter<'a>: Iterator<Item = ErrorFrameImpl> + 'a
     where Self: 'a;
 
     /// Creates a new error type.
@@ -68,12 +68,12 @@ pub enum ErrorOrigin {
 }
 
 /// A decoded frame of error information, retrieved from an [`ErrorImpl`].
-#[derive(Debug)]
-pub struct ErrorFrame {
+#[derive(Clone, Debug)]
+pub struct ErrorFrameImpl {
     data: ErrorFrameData,
     location: Option<DecodedLocation>,
 }
-impl Display for ErrorFrame {
+impl Display for ErrorFrameImpl {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match &self.data {
             ErrorFrameData::InternalContext(ctx) => write!(f, "{}", ctx.message())?,
@@ -120,7 +120,7 @@ impl Display for ErrorFrame {
 }
 
 /// The data represented by an error frame.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum ErrorFrameData {
     /// Used to represent a frame of context that doesn't "really" exist, but should be reported
     /// to the user anyway.
@@ -151,7 +151,7 @@ impl ErrorFrameData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum MessageContainer {
     /// Used to represent a static message given by the user.
     Static(&'static str),
@@ -187,7 +187,7 @@ impl Display for MessageContainer {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum InternalContextType {
     /// Used to represent when an error type is constructed at a significantly different location
     /// from the `Location` stored in the error type.

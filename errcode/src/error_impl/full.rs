@@ -98,7 +98,7 @@ enum FrameLoopPhase {
     Ended,
 }
 impl Iterator for ErrorImplIter<'_> {
-    type Item = ErrorFrame;
+    type Item = ErrorFrameImpl;
     fn next(&mut self) -> Option<Self::Item> {
         while self.idx > 0 {
             let frame = &self.underlying.steps[self.idx - 1];
@@ -110,7 +110,7 @@ impl Iterator for ErrorImplIter<'_> {
                     ErrorOrigin::StaticOrigin(info) => Some(info),
                     ErrorOrigin::TypeOrigin(_, info) => info,
                 };
-                return Some(ErrorFrame {
+                return Some(ErrorFrameImpl {
                     data: match &frame.formatted_message {
                         None => match frame.static_info {
                             ErrorOrigin::StaticOrigin(origin) => {
@@ -142,7 +142,7 @@ impl Iterator for ErrorImplIter<'_> {
                 };
                 if let Some(origin) = origin {
                     if !origin.is_same(location) {
-                        return Some(ErrorFrame {
+                        return Some(ErrorFrameImpl {
                             data: ErrorFrameData::InternalContext(
                                 InternalContextType::ErrorTypeConstructed,
                             ),

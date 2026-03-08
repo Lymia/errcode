@@ -1,6 +1,6 @@
+use errcode::ErrorCode;
 use errcode::prelude::ConvertErrorHelper;
 use errcode::{Error, error_info};
-use errcode::ErrorCode;
 
 #[derive(ErrorCode)]
 pub enum TestCode {

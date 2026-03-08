@@ -1,6 +1,6 @@
 [package]
 name = "errcode_derive"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2024"
 

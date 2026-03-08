@@ -200,7 +200,7 @@ enum ErrorIterPhase {
     Ended,
 }
 impl Iterator for ErrorImplIter {
-    type Item = ErrorFrame;
+    type Item = ErrorFrameImpl;
     fn next(&mut self) -> Option<Self::Item> {
         let tag = self.origin_info.tag();
 
@@ -209,7 +209,7 @@ impl Iterator for ErrorImplIter {
             self.phase = ErrorIterPhase::FirstContext;
             if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
                 if let Some(context_second) = self.origin_info.context_second() {
-                    return Some(ErrorFrame {
+                    return Some(ErrorFrameImpl {
                         data: ErrorFrameData::decode_static(Some(context_second), None),
                         location: context_second.location.map(|x| *x),
                     });
@@ -229,7 +229,7 @@ impl Iterator for ErrorImplIter {
                 } else {
                     context_first.location.map(|x| *x)
                 };
-                return Some(ErrorFrame {
+                return Some(ErrorFrameImpl {
                     data: ErrorFrameData::decode_static(Some(context_first), None),
                     location,
                 });
@@ -246,7 +246,7 @@ impl Iterator for ErrorImplIter {
                     && let Some(location_b) = self.original_location
                 {
                     if !location_a.is_same(location_b.into()) {
-                        return Some(ErrorFrame {
+                        return Some(ErrorFrameImpl {
                             data: ErrorFrameData::InternalContext(
                                 InternalContextType::ErrorTypeConstructed,
                             ),
@@ -263,13 +263,13 @@ impl Iterator for ErrorImplIter {
 
             if tag == TAG_STATIC_TYPE_ONLY {
                 // we have a static type node!
-                return Some(ErrorFrame {
+                return Some(ErrorFrameImpl {
                     data: ErrorFrameData::TypeFrame(self.origin_info.ty_name(), None),
                     location: self.original_location.map(DecodedLocation::from),
                 });
             } else if tag == TAG_STATIC_CONTEXT_ONLY {
                 // we have a former type node that we appended context to
-                return Some(ErrorFrame {
+                return Some(ErrorFrameImpl {
                     data: ErrorFrameData::InternalContext(InternalContextType::OriginalTypeLost),
                     location: self.original_location.map(DecodedLocation::from),
                 });
@@ -281,7 +281,7 @@ impl Iterator for ErrorImplIter {
             self.phase = ErrorIterPhase::Ended;
             if tag == TAG_STATIC_ORIGINAL || tag == TAG_STATIC_CONTEXT_ONLY {
                 if self.origin_info.has_omitted_context() {
-                    return Some(ErrorFrame {
+                    return Some(ErrorFrameImpl {
                         data: ErrorFrameData::InternalContext(
                             InternalContextType::FurtherFramesOmitted,
                         ),

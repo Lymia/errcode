@@ -1,5 +1,7 @@
 use crate::error_code::ErrorCode;
-use crate::error_impl::{ErrorImpl, ErrorImplFunctions, ErrorOrigin, ErrorInfoImpl};
+use crate::error_impl::{
+    ErrorFrameImpl, ErrorImpl, ErrorImplFunctions, ErrorInfoImpl, ErrorOrigin,
+};
 use core::any::{TypeId, type_name};
 use core::fmt::{Arguments, Debug, Display, Formatter};
 
@@ -131,6 +133,31 @@ impl Display for Error {
             write!(f, "\n    {frame}")?;
         }
         Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct ErrorFrame {
+    inner: ErrorFrameImpl,
+}
+impl Debug for ErrorFrame {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        Debug::fmt(&self.inner, f)
+    }
+}
+impl Display for ErrorFrame {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        Display::fmt(&self.inner, f)
+    }
+}
+
+pub struct ErrorFrameIter<'a> {
+    iter: <ErrorImpl as ErrorImplFunctions>::FrameIter<'a>,
+}
+impl Iterator for ErrorFrameIter<'_> {
+    type Item = ErrorFrame;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|x| ErrorFrame { inner: x })
     }
 }
 
