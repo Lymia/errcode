@@ -38,7 +38,12 @@ fn formatted_and_unformatted() {
     assert!(error.to_string().starts_with("test! {{ }}"), "Line: {error}");
 
     let error = Error::from_info(error_info!("test! {{ }} {}", 3));
-    assert!(error.to_string().starts_with("<unformatted:> \"test! {{ }} {}\""), "Line: {error}");
+    assert!(
+        error
+            .to_string()
+            .starts_with("<unformatted:> \"test! {{ }} {}\""),
+        "Line: {error}"
+    );
 }
 
 #[test]
