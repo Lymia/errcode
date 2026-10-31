@@ -108,7 +108,7 @@ impl<T: core::error::Error> From<T> for Error {
     #[inline(never)]
     #[track_caller]
     fn from(value: T) -> Self {
-        let code = error_code_for_error(&value);
+        let code = convert_stdlib_error(&value);
         Error {
             underlying: ErrorImpl::new(
                 ErrorOrigin::TypeOrigin(type_name::<T>(), code),
@@ -171,7 +171,8 @@ pub struct ErrorInfo<'a> {
 }
 
 #[inline(never)]
-fn error_code_for_error<T>(_value: &T) -> Option<&'static ErrorInfoImpl> {
+fn convert_stdlib_error<T>(_value: &T) -> Option<&'static ErrorInfoImpl> {
+    // TODO: Add checks at some point for common error types like those found in `std`.
     None
 }
 

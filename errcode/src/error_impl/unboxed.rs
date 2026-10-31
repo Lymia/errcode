@@ -3,8 +3,8 @@
 //! TODO: Document
 
 use super::*;
-use core::hint::unreachable_unchecked;
-use core::num::NonZeroUsize;
+use core::ptr;
+use core::ptr::NonNull;
 
 #[derive(Clone)]
 pub struct ErrorImpl {
@@ -66,7 +66,7 @@ struct PackedOriginInfo {
     ///
     /// For `TAG_STATIC_TYPE_ONLY`, this is the length of the type string, with the pointer
     /// itself stored in `additional`. It is enforced nonzero because the tag is nonzero.
-    tag: NonZeroUsize,
+    tag: NonNull<()>,
 
     /// Additional tag information.
     ///
@@ -75,7 +75,7 @@ struct PackedOriginInfo {
     /// a flag for whether frames have been omitted from this context.
     ///
     /// For `TAG_STATIC_TYPE_ONLY`, this is the pointer to the string.
-    additional: usize,
+    additional: *const (),
 }
 impl PackedOriginInfo {
     fn for_origin(e: ErrorOrigin) -> Self {
@@ -83,17 +83,19 @@ impl PackedOriginInfo {
             match e {
                 ErrorOrigin::StaticOrigin(ptr) | ErrorOrigin::TypeOrigin(_, Some(ptr)) => {
                     PackedOriginInfo {
-                        tag: NonZeroUsize::new_unchecked(
-                            (ptr as *const _ as usize) | TAG_STATIC_ORIGINAL,
-                        ),
-                        additional: 0,
+                        tag: NonNull::from_ref(ptr)
+                            .map_addr(|x| x | TAG_STATIC_ORIGINAL)
+                            .cast(),
+                        additional: ptr::null(),
                     }
                 }
                 ErrorOrigin::TypeOrigin(ptr, None) => {
                     assert!(ptr.len() < MAX_TYPE_LEN);
                     PackedOriginInfo {
-                        tag: NonZeroUsize::new_unchecked((ptr.len() << 2) | TAG_STATIC_TYPE_ONLY),
-                        additional: ptr.as_ptr() as usize,
+                        tag: NonNull::new_unchecked(ptr::without_provenance_mut(
+                            (ptr.len() << 2) | TAG_STATIC_TYPE_ONLY,
+                        )),
+                        additional: ptr.as_ptr().cast(),
                     }
                 }
             }
@@ -101,35 +103,36 @@ impl PackedOriginInfo {
     }
 
     fn tag(&self) -> usize {
-        self.tag.get() & TAG_MASK
+        self.tag.as_ptr().addr() & TAG_MASK
     }
 
     fn with_context(mut self, source: &'static ErrorInfoImpl) -> Self {
         unsafe {
             match self.tag() {
                 TAG_STATIC_ORIGINAL | TAG_STATIC_CONTEXT_ONLY => {
-                    if self.additional == 0 {
-                        self.additional = source as *const _ as usize;
+                    if self.additional.is_null() {
+                        self.additional = source as *const _ as *const _;
                         self
                     } else {
-                        let original = &*(self.additional as *const ErrorInfoImpl);
+                        let original = self.additional.map_addr(|x| x & !OMITTED_BIT_MASK);
+                        let original = &*(original as *const ErrorInfoImpl);
                         if original.error_code.is_none() || source.error_code.is_some() {
-                            self.additional = source as *const _ as usize;
-                            self.additional |= OMITTED_BIT_MASK;
+                            self.additional = source as *const _ as *const ();
+                            self.additional = self.additional.map_addr(|x| x | OMITTED_BIT_MASK);
                             self
                         } else {
-                            self.additional |= OMITTED_BIT_MASK;
+                            self.additional = self.additional.map_addr(|x| x | OMITTED_BIT_MASK);
                             self
                         }
                     }
                 }
                 TAG_STATIC_TYPE_ONLY => PackedOriginInfo {
-                    tag: NonZeroUsize::new_unchecked(
-                        (source as *const _ as usize) | TAG_STATIC_CONTEXT_ONLY,
-                    ),
-                    additional: 0,
+                    tag: NonNull::from_ref(source)
+                        .map_addr(|x| x | TAG_STATIC_CONTEXT_ONLY)
+                        .cast(),
+                    additional: ptr::null(),
                 },
-                _ => unreachable_unchecked(),
+                _ => unreachable!(),
             }
         }
     }
@@ -138,7 +141,7 @@ impl PackedOriginInfo {
         unsafe {
             assert_eq!(self.tag(), TAG_STATIC_TYPE_ONLY);
             let ptr = self.additional as *const u8;
-            let len = self.tag.get() >> 2;
+            let len = self.tag.as_ptr().addr() >> 2;
             let slice = core::slice::from_raw_parts(ptr, len);
             core::str::from_utf8_unchecked(slice)
         }
@@ -147,24 +150,24 @@ impl PackedOriginInfo {
     fn context_first(&self) -> &'static ErrorInfoImpl {
         unsafe {
             assert!(self.tag() == TAG_STATIC_ORIGINAL || self.tag() == TAG_STATIC_CONTEXT_ONLY);
-            &*((self.tag.get() & !TAG_MASK) as *const ErrorInfoImpl)
+            &*(self.tag.as_ptr().map_addr(|x| x & !TAG_MASK) as *const _)
         }
     }
 
     fn context_second(&self) -> Option<&'static ErrorInfoImpl> {
         unsafe {
             assert!(self.tag() == TAG_STATIC_ORIGINAL || self.tag() == TAG_STATIC_CONTEXT_ONLY);
-            if (self.additional & !OMITTED_BIT_MASK) == 0 {
+            if (self.additional.addr() & !OMITTED_BIT_MASK) == 0 {
                 None
             } else {
-                Some(&*((self.additional & !OMITTED_BIT_MASK) as *const ErrorInfoImpl))
+                Some(&*(self.additional.map_addr(|x| x & !OMITTED_BIT_MASK) as *const _))
             }
         }
     }
 
     fn has_omitted_context(self) -> bool {
         if self.tag() == TAG_STATIC_CONTEXT_ONLY || self.tag() == TAG_STATIC_ORIGINAL {
-            self.additional & OMITTED_BIT_MASK == OMITTED_BIT_MASK
+            self.additional.addr() & OMITTED_BIT_MASK == OMITTED_BIT_MASK
         } else {
             false
         }
@@ -184,6 +187,8 @@ impl PackedOriginInfo {
         }
     }
 }
+unsafe impl Send for PackedOriginInfo {}
+unsafe impl Sync for PackedOriginInfo {}
 
 pub struct ErrorImplIter {
     phase: ErrorIterPhase,
