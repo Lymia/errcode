@@ -3,6 +3,7 @@ name = "errcode"
 version = "0.1.1"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2024"
+rust-version = "1.89.0"
 
 description = "A Rust library for simplified error handling."
 keywords = ["error", "error-handling"]
@@ -12,7 +13,7 @@ documentation = "https://docs.rs/errcode/"
 repository = "https://github.com/Lymia/errcode"
 readme = "README.md"
 
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [badges]
 travis-ci = { repository = "Lymia/errcode", branch = "master" }

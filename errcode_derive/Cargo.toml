@@ -3,13 +3,14 @@ name = "errcode_derive"
 version = "0.1.1"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2024"
+rust-version = "1.89.0"
 
 description = "An internal helper crate for errcode. Not public API."
 
 documentation = "https://docs.rs/errcode_derive/latest/errcode_derive/"
 repository = "https://github.com/Lymia/errcode"
 
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [lib]
 proc-macro = true
