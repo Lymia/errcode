@@ -21,7 +21,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Initial pre-release.
 
+## v0.1.1 (2026-10-31)
+
+### Chore
+
+ - <csr-id-3d864358ac9655df78f12bbbd64c4b9e2484a1a2/> Run rustfmt.
+
+### Bug Fixes
+
+ - <csr-id-61fdef694cadcc8d93f99c5e6772862b8dfb46d9/> Fix the accidental alloc dependency when repr_full is not in use.
+ - <csr-id-428b8ddbf7eaf4d2e965b804698c6858a85068ce/> Use the strict providence APIs.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 209 days passed between releases.
+ - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Fix the accidental alloc dependency when repr_full is not in use. ([`61fdef6`](https://github.com/Lymia/errcode/commit/61fdef694cadcc8d93f99c5e6772862b8dfb46d9))
+    - Use the strict providence APIs. ([`428b8dd`](https://github.com/Lymia/errcode/commit/428b8ddbf7eaf4d2e965b804698c6858a85068ce))
+    - Run rustfmt. ([`3d86435`](https://github.com/Lymia/errcode/commit/3d864358ac9655df78f12bbbd64c4b9e2484a1a2))
+</details>
+
 ## v0.1.0-alpha.2 (2026-04-04)
+
+<csr-id-51779966390938050f7a50b6ce081be5ebdf5933/>
 
 ### Chore
 
@@ -35,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -46,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release errcode v0.1.0-alpha.2 ([`ac20ac0`](https://github.com/Lymia/errcode/commit/ac20ac0d6433755811cb4eebe2bb2c5110e28847))
     - New errcode version. ([`5177996`](https://github.com/Lymia/errcode/commit/51779966390938050f7a50b6ce081be5ebdf5933))
     - Implement new helper macros, following the example of anyhow. ([`dafba8a`](https://github.com/Lymia/errcode/commit/dafba8adbb2978a35a899abf1519e8afaad41c17))
 </details>
