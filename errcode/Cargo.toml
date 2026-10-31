@@ -1,6 +1,6 @@
 [package]
 name = "errcode"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Alissa Rao <aura@aura.moe>"]
 edition = "2024"
 rust-version = "1.89.0"
@@ -44,4 +44,4 @@ repr_unboxed = []
 repr_unboxed_location = []
 
 [dependencies]
-errcode_derive = { version = "^0.1.1", path = "../errcode_derive" }
+errcode_derive = { version = "^0.1.2", path = "../errcode_derive" }

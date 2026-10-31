@@ -21,7 +21,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Initial pre-release.
 
+## v0.1.2 (2026-10-31)
+
+### Chore
+
+ - <csr-id-ef51ede77e93ca6abbd81970cebec80405afa553/> Add basic documentation for errcode.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Add basic documentation for errcode. ([`ef51ede`](https://github.com/Lymia/errcode/commit/ef51ede77e93ca6abbd81970cebec80405afa553))
+</details>
+
 ## v0.1.1 (2026-10-31)
+
+<csr-id-3d864358ac9655df78f12bbbd64c4b9e2484a1a2/>
 
 ### Chore
 
@@ -36,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 209 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -48,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release errcode v0.1.1 ([`6678ea8`](https://github.com/Lymia/errcode/commit/6678ea843017002b3dc41f6a7081a587557a392f))
     - Fix the accidental alloc dependency when repr_full is not in use. ([`61fdef6`](https://github.com/Lymia/errcode/commit/61fdef694cadcc8d93f99c5e6772862b8dfb46d9))
     - Use the strict providence APIs. ([`428b8dd`](https://github.com/Lymia/errcode/commit/428b8ddbf7eaf4d2e965b804698c6858a85068ce))
     - Run rustfmt. ([`3d86435`](https://github.com/Lymia/errcode/commit/3d864358ac9655df78f12bbbd64c4b9e2484a1a2))
