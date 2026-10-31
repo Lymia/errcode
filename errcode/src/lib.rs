@@ -1,4 +1,6 @@
 #![no_std]
+
+#[cfg(feature = "repr_full")]
 extern crate alloc;
 
 mod error_code;
